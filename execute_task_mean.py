@@ -9,6 +9,8 @@ from itertools import combinations_with_replacement
 import torch
 import gc
 import re
+from visdom import Visdom
+
 
 sys.path.append('/pytorch-cifar-master/')
 
@@ -23,11 +25,11 @@ co_exec = 'nn'
 # path_exe = ['PolyBench_exe', 'pytorch-cifar-master']
 path_exe = ['PolyBench_exe', 'pytorch-cifar-master', 'CUDA_samples/NVIDIA_CUDA-9.0_Samples/bin/x86_64/linux/release']
 
-# poly_exe = ['2DConvolution', '3DConvolution', '3mm', 'atax', 'bicg', 'gemm', 'gesummv', 'mvt', 'syr2k', 'syrk',
-#             'fdtd2d', 'correlation', 'covariance']
+poly_exe = ['2DConvolution', '3DConvolution', '3mm', 'atax', 'bicg', 'gemm', 'gesummv', 'mvt', 'syr2k', 'syrk',
+            'fdtd2d', 'correlation', 'covariance']
 
 # poly_exe = ['gesummv', 'mvt', 'syr2k', 'syrk', 'fdtd2d', 'correlation', 'covariance']
-poly_exe = []
+# poly_exe = []
 
 example_exe = ['cdpBezierTessellation', 'simpleCallback', 'template', 'newdelete', 'warpAggregatedAtomicsCG',
                'cppIntegration', 'MersenneTwisterGP11213', 'reductionMultiBlockCG', 'matrixMulDynlinkJIT', 'cudaOpenMP',
@@ -50,16 +52,16 @@ example_exe = ['cdpBezierTessellation', 'simpleCallback', 'template', 'newdelete
 # poly_exe = ['2mm','gramschmidt']
 epoch = '32'
 
-# inference_exe = [(epoch, '1', 'test', 'VGG'), (epoch, '1', 'test', 'ResNet'), (epoch, '1', 'test', 'GoogleNet'),
-#                  (epoch, '1', 'test', 'DenseNet'), (epoch, '1', 'test', 'MobileNet'),
-#                  (epoch, '16', 'test', 'VGG'), (epoch, '16', 'test', 'ResNet'), (epoch, '16', 'test', 'GoogleNet'),
-#                  (epoch, '16', 'test', 'DenseNet'), (epoch, '16', 'test', 'MobileNet'),
-#                  (epoch, '32', 'test', 'VGG'), (epoch, '32', 'test', 'ResNet'), (epoch, '32', 'test', 'GoogleNet'),
-#                  (epoch, '32', 'test', 'DenseNet'), (epoch, '32', 'test', 'MobileNet'),
-#                  (epoch, '64', 'test', 'VGG'), (epoch, '64', 'test', 'ResNet'), (epoch, '64', 'test', 'GoogleNet'),
-#                  (epoch, '64', 'test', 'DenseNet'), (epoch, '64', 'test', 'MobileNet')]
+inference_exe = [(epoch, '1', 'test', 'VGG'), (epoch, '1', 'test', 'ResNet'), (epoch, '1', 'test', 'GoogleNet'),
+                 (epoch, '1', 'test', 'DenseNet'), (epoch, '1', 'test', 'MobileNet'),
+                 (epoch, '16', 'test', 'VGG'), (epoch, '16', 'test', 'ResNet'), (epoch, '16', 'test', 'GoogleNet'),
+                 (epoch, '16', 'test', 'DenseNet'), (epoch, '16', 'test', 'MobileNet'),
+                 (epoch, '32', 'test', 'VGG'), (epoch, '32', 'test', 'ResNet'), (epoch, '32', 'test', 'GoogleNet'),
+                 (epoch, '32', 'test', 'DenseNet'), (epoch, '32', 'test', 'MobileNet'),
+                 (epoch, '64', 'test', 'VGG'), (epoch, '64', 'test', 'ResNet'), (epoch, '64', 'test', 'GoogleNet'),
+                 (epoch, '64', 'test', 'DenseNet'), (epoch, '64', 'test', 'MobileNet')]
 
-inference_exe = []
+# inference_exe = []
 
 # Version 1
 # one_task_time_csv = 'one_task_time_mean.csv'
@@ -70,6 +72,7 @@ inference_exe = []
 one_task_time_csv = 'all_category_one_task_time_mean.csv'
 two_task_time_csv = 'all_category_two_task_time_mean.csv'
 align_two_task_time_csv = 'all_category_align_two_task_time_mean.csv'
+align_two_task_time_gap_csv = 'all_category_align_two_task_time_gap_mean.csv'
 
 LOOP = 10
 LOOP_TWO = 4
@@ -437,16 +440,25 @@ def align_execute_mean_two():
             dict_two[group[0]] = x1
 
     # write the dictionary to csv file
-    f = open(align_two_task_time_csv, 'a+')
+    # f = open(align_two_task_time_csv, 'a+')
+    # csv_w = csv.writer(f)
+    #
+    # for p in dict_two.keys():
+    #     list_cor = dict_two[p]
+    #     for i in list_cor:
+    #         # print i
+    #         csv_w.writerow(i)
+    # f.close()
+
+    # write the dictionary to csv file
+    f = open(align_two_task_time_gap_csv, 'a+')
     csv_w = csv.writer(f)
 
     for p in dict_two.keys():
         list_cor = dict_two[p]
         for i in list_cor:
-            # print i
-            csv_w.writerow(i)
+            csv_w.writerow([i[0],i[1],float(i[3])-float(i[2]),float(i[5])-float(i[4])])
     f.close()
-
 
 if __name__ == '__main__':
     # example_exe = list_cuda_example()
@@ -457,5 +469,19 @@ if __name__ == '__main__':
     #     execute_two_mean()
 
     # execute_one_mean()
-    execute_two_mean()
+    # execute_two_mean()
     # align_execute_mean_two()
+
+    viz = Visdom()
+    assert viz.check_connection()
+
+    try:
+        import matplotlib.pyplot as plt
+        plt.switch_backend('agg')
+        plt.plot([x**2 for x in range(10)])
+        plt.ylabel('numerical numbers')
+        viz.matplot(plt)
+    except BaseException as err:
+        print('Skipped matplotlib example')
+        print('Error message: ', err)
+
