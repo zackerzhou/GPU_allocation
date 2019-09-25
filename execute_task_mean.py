@@ -3,12 +3,14 @@
 import os
 import subprocess
 import sys
-import time
 import csv
 from itertools import combinations_with_replacement
 import torch
 import gc
-import re
+from visdom import Visdom
+import time
+import numpy as np
+
 
 sys.path.append('/pytorch-cifar-master/')
 
@@ -23,11 +25,11 @@ co_exec = 'nn'
 # path_exe = ['PolyBench_exe', 'pytorch-cifar-master']
 path_exe = ['PolyBench_exe', 'pytorch-cifar-master', 'CUDA_samples/NVIDIA_CUDA-9.0_Samples/bin/x86_64/linux/release']
 
-# poly_exe = ['2DConvolution', '3DConvolution', '3mm', 'atax', 'bicg', 'gemm', 'gesummv', 'mvt', 'syr2k', 'syrk',
-#             'fdtd2d', 'correlation', 'covariance']
+poly_exe = ['2DConvolution', '3DConvolution', '3mm', 'atax', 'bicg', 'gemm', 'gesummv', 'mvt', 'syr2k', 'syrk',
+            'fdtd2d', 'correlation', 'covariance']
 
 # poly_exe = ['gesummv', 'mvt', 'syr2k', 'syrk', 'fdtd2d', 'correlation', 'covariance']
-poly_exe = []
+# poly_exe = []
 
 example_exe = ['cdpBezierTessellation', 'simpleCallback', 'template', 'newdelete', 'warpAggregatedAtomicsCG',
                'cppIntegration', 'MersenneTwisterGP11213', 'reductionMultiBlockCG', 'matrixMulDynlinkJIT', 'cudaOpenMP',
@@ -50,16 +52,16 @@ example_exe = ['cdpBezierTessellation', 'simpleCallback', 'template', 'newdelete
 # poly_exe = ['2mm','gramschmidt']
 epoch = '32'
 
-# inference_exe = [(epoch, '1', 'test', 'VGG'), (epoch, '1', 'test', 'ResNet'), (epoch, '1', 'test', 'GoogleNet'),
-#                  (epoch, '1', 'test', 'DenseNet'), (epoch, '1', 'test', 'MobileNet'),
-#                  (epoch, '16', 'test', 'VGG'), (epoch, '16', 'test', 'ResNet'), (epoch, '16', 'test', 'GoogleNet'),
-#                  (epoch, '16', 'test', 'DenseNet'), (epoch, '16', 'test', 'MobileNet'),
-#                  (epoch, '32', 'test', 'VGG'), (epoch, '32', 'test', 'ResNet'), (epoch, '32', 'test', 'GoogleNet'),
-#                  (epoch, '32', 'test', 'DenseNet'), (epoch, '32', 'test', 'MobileNet'),
-#                  (epoch, '64', 'test', 'VGG'), (epoch, '64', 'test', 'ResNet'), (epoch, '64', 'test', 'GoogleNet'),
-#                  (epoch, '64', 'test', 'DenseNet'), (epoch, '64', 'test', 'MobileNet')]
+inference_exe = [(epoch, '1', 'test', 'VGG'), (epoch, '1', 'test', 'ResNet'), (epoch, '1', 'test', 'GoogleNet'),
+                 (epoch, '1', 'test', 'DenseNet'), (epoch, '1', 'test', 'MobileNet'),
+                 (epoch, '16', 'test', 'VGG'), (epoch, '16', 'test', 'ResNet'), (epoch, '16', 'test', 'GoogleNet'),
+                 (epoch, '16', 'test', 'DenseNet'), (epoch, '16', 'test', 'MobileNet'),
+                 (epoch, '32', 'test', 'VGG'), (epoch, '32', 'test', 'ResNet'), (epoch, '32', 'test', 'GoogleNet'),
+                 (epoch, '32', 'test', 'DenseNet'), (epoch, '32', 'test', 'MobileNet'),
+                 (epoch, '64', 'test', 'VGG'), (epoch, '64', 'test', 'ResNet'), (epoch, '64', 'test', 'GoogleNet'),
+                 (epoch, '64', 'test', 'DenseNet'), (epoch, '64', 'test', 'MobileNet')]
 
-inference_exe = []
+# inference_exe = []
 
 # Version 1
 # one_task_time_csv = 'one_task_time_mean.csv'
@@ -70,6 +72,7 @@ inference_exe = []
 one_task_time_csv = 'all_category_one_task_time_mean.csv'
 two_task_time_csv = 'all_category_two_task_time_mean.csv'
 align_two_task_time_csv = 'all_category_align_two_task_time_mean.csv'
+align_two_task_time_gap_csv = 'all_category_align_two_task_time_gap_mean.csv'
 
 LOOP = 10
 LOOP_TWO = 4
@@ -437,17 +440,79 @@ def align_execute_mean_two():
             dict_two[group[0]] = x1
 
     # write the dictionary to csv file
-    f = open(align_two_task_time_csv, 'a+')
+    # f = open(align_two_task_time_csv, 'a+')
+    # csv_w = csv.writer(f)
+    #
+    # for p in dict_two.keys():
+    #     list_cor = dict_two[p]
+    #     for i in list_cor:
+    #         # print i
+    #         csv_w.writerow(i)
+    # f.close()
+
+    # write the dictionary to csv file
+    f = open(align_two_task_time_gap_csv, 'a+')
     csv_w = csv.writer(f)
+
+    x = []
+    y1 = []
+    y2 = []
 
     for p in dict_two.keys():
         list_cor = dict_two[p]
         for i in list_cor:
-            # print i
-            csv_w.writerow(i)
+            gap_1 = float(i[3])-float(i[2])
+            gap_2 = float(i[5])-float(i[4])
+            # csv_w.writerow([i[0],i[1],gap_1,gap_2])
+            x.append(i[0]+'&'+i[1])
+            y1.append(gap_1)
+            y2.append(gap_2)
     f.close()
 
+    # plot the diagram
+    viz = Visdom()
+    assert viz.check_connection()
 
+    # ----------------------------------------------------------------------------------------------
+    # plot all the points via matplotlib.pyplot
+    # ----------------------------------------------------------------------------------------------
+    try:
+        import matplotlib.pyplot as plt
+        plt.switch_backend('agg')
+        # plt.plot(y1[6500:7000])
+        plt.plot(y2)
+        plt.ylabel('numerical numbers')
+        win = viz.matplot(plt)
+    except BaseException as err:
+        print('Skipped matplotlib example')
+        print('Error message: ', err)
+
+    assert viz.win_exists(win), 'Created window marked as not existing'
+    # ----------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------------
+    # plot the point one by one on the Visdom Window via "Line"
+    # ----------------------------------------------------------------------------------------------
+    # gap_window = viz.line(
+    #                         X = np.zeros((1,)),
+    #                         Y = np.zeros((1)),
+    #                         opts = dict(
+    #                                         xlabel='Index',
+    #                                         ylabel='Time Gap',
+    #                                         title='Exec Time(two tasks) vs Exec Time(one task)'
+    #                                    )
+    #                       )
+    # cnt = 0
+    # for i in range(6900,6950):
+    #     viz.line(
+    #                 Y=[y1[i]], X=[cnt], win=gap_window, update='append'
+    #             )
+    #     cnt += 1
+    #     print(cnt)
+    #     time.sleep(0.3)
+    # ----------------------------------------------------------------------------------------------
+
+# test
 if __name__ == '__main__':
     # example_exe = list_cuda_example()
 
@@ -457,5 +522,7 @@ if __name__ == '__main__':
     #     execute_two_mean()
 
     # execute_one_mean()
-    execute_two_mean()
-    # align_execute_mean_two()
+    # execute_two_mean()
+    align_execute_mean_two()
+
+
