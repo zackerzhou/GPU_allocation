@@ -512,7 +512,7 @@ def align_execute_mean_two():
     #     time.sleep(0.3)
     # ----------------------------------------------------------------------------------------------
 
-
+# test
 if __name__ == '__main__':
     # example_exe = list_cuda_example()
 
