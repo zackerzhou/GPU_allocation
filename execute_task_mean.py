@@ -3,13 +3,13 @@
 import os
 import subprocess
 import sys
-import time
 import csv
 from itertools import combinations_with_replacement
 import torch
 import gc
-import re
 from visdom import Visdom
+import time
+import numpy as np
 
 
 sys.path.append('/pytorch-cifar-master/')
@@ -454,11 +454,64 @@ def align_execute_mean_two():
     f = open(align_two_task_time_gap_csv, 'a+')
     csv_w = csv.writer(f)
 
+    x = []
+    y1 = []
+    y2 = []
+
     for p in dict_two.keys():
         list_cor = dict_two[p]
         for i in list_cor:
-            csv_w.writerow([i[0],i[1],float(i[3])-float(i[2]),float(i[5])-float(i[4])])
+            gap_1 = float(i[3])-float(i[2])
+            gap_2 = float(i[5])-float(i[4])
+            # csv_w.writerow([i[0],i[1],gap_1,gap_2])
+            x.append(i[0]+'&'+i[1])
+            y1.append(gap_1)
+            y2.append(gap_2)
     f.close()
+
+    # plot the diagram
+    viz = Visdom()
+    assert viz.check_connection()
+
+    # ----------------------------------------------------------------------------------------------
+    # plot all the points via matplotlib.pyplot
+    # ----------------------------------------------------------------------------------------------
+    try:
+        import matplotlib.pyplot as plt
+        plt.switch_backend('agg')
+        # plt.plot(y1[6500:7000])
+        plt.plot(y2)
+        plt.ylabel('numerical numbers')
+        win = viz.matplot(plt)
+    except BaseException as err:
+        print('Skipped matplotlib example')
+        print('Error message: ', err)
+
+    assert viz.win_exists(win), 'Created window marked as not existing'
+    # ----------------------------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------------------------------
+    # plot the point one by one on the Visdom Window via "Line"
+    # ----------------------------------------------------------------------------------------------
+    # gap_window = viz.line(
+    #                         X = np.zeros((1,)),
+    #                         Y = np.zeros((1)),
+    #                         opts = dict(
+    #                                         xlabel='Index',
+    #                                         ylabel='Time Gap',
+    #                                         title='Exec Time(two tasks) vs Exec Time(one task)'
+    #                                    )
+    #                       )
+    # cnt = 0
+    # for i in range(6900,6950):
+    #     viz.line(
+    #                 Y=[y1[i]], X=[cnt], win=gap_window, update='append'
+    #             )
+    #     cnt += 1
+    #     print(cnt)
+    #     time.sleep(0.3)
+    # ----------------------------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
     # example_exe = list_cuda_example()
@@ -470,18 +523,6 @@ if __name__ == '__main__':
 
     # execute_one_mean()
     # execute_two_mean()
-    # align_execute_mean_two()
+    align_execute_mean_two()
 
-    viz = Visdom()
-    assert viz.check_connection()
-
-    try:
-        import matplotlib.pyplot as plt
-        plt.switch_backend('agg')
-        plt.plot([x**2 for x in range(10)])
-        plt.ylabel('numerical numbers')
-        viz.matplot(plt)
-    except BaseException as err:
-        print('Skipped matplotlib example')
-        print('Error message: ', err)
 
