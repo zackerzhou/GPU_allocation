@@ -135,8 +135,8 @@ def profile_inference():
 
         # Version 2
         p1 = subprocess.Popen(
-            'nvprof --csv --log-file ./GPU_metrics/all_category_metrics_%s_%s_%s_%s_%s.csv  --print-gpu-trace --profile-child-processes  --metrics all  python ./pytorch-cifar-master/main_arg.py  --epoch %s --batch %s --job %s --net %s' % (
-                i[2], i[3], i[1], i[0], '%p', i[0], i[1], i[2], i[3]), close_fds=True,
+            'nvprof --csv --log-file ./GPU_metrics/all_category_metrics_%s_%s_%s_%s.csv  --print-gpu-trace --profile-child-processes  --metrics all  python ./pytorch-cifar-master/main_arg.py  --epoch %s --batch %s --job %s --net %s' % (
+                i[2], i[3], i[1], '%p', i[0], i[1], i[2], i[3]), close_fds=True,
             shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
 
         # str_temp = '-'
@@ -172,8 +172,8 @@ def profile_inference():
 
         # Version 2
         p1 = subprocess.Popen(
-            'nvprof --csv --log-file ./GPU_duration/all_category_duration_%s_%s_%s_%s_%s.csv --print-gpu-trace --profile-child-processes python ./pytorch-cifar-master/main_arg.py  --epoch %s --batch %s --job %s --net %s' % (
-                i[2], i[3], i[1], i[0], '%p', i[0], i[1], i[2], i[3]), close_fds=True,
+            'nvprof --csv --log-file ./GPU_duration/all_category_duration_%s_%s_%s_%s.csv --print-gpu-trace --profile-child-processes python ./pytorch-cifar-master/main_arg.py  --epoch %s --batch %s --job %s --net %s' % (
+                i[2], i[3], i[1], '%p', i[0], i[1], i[2], i[3]), close_fds=True,
             shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
 
         # p2 = subprocess.Popen(
@@ -183,8 +183,8 @@ def profile_inference():
 
         # Version 2
         p2 = subprocess.Popen(
-            'nvidia-smi --query-gpu=temperature.gpu,power.draw,memory.used,utilization.gpu --format=csv,nounits --loop-ms=50 --filename=./GPU_status/all_category_%s_%s_%s_%s_status.csv' % (
-                i[2], i[3], i[1], i[0]), close_fds=True,
+            'nvidia-smi --query-gpu=temperature.gpu,power.draw,memory.used,utilization.gpu --format=csv,nounits --loop-ms=50 --filename=./GPU_status/all_category_%s_%s_%s_status.csv' % (
+                i[2], i[3], i[1]), close_fds=True,
             shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
 
         while 1:

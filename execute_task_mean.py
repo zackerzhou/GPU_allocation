@@ -9,8 +9,12 @@ import torch
 import gc
 from visdom import Visdom
 import time
+import re
 import numpy as np
 
+# ----------------------------------------------------------------------------------------------
+# Setting & Configuration --- Start
+# ----------------------------------------------------------------------------------------------
 
 sys.path.append('/pytorch-cifar-master/')
 
@@ -73,9 +77,15 @@ one_task_time_csv = 'all_category_one_task_time_mean.csv'
 two_task_time_csv = 'all_category_two_task_time_mean.csv'
 align_two_task_time_csv = 'all_category_align_two_task_time_mean.csv'
 align_two_task_time_gap_csv = 'all_category_align_two_task_time_gap_mean.csv'
+path_folder_util = './GPU_status'
+file_ave_util = 'average_util.csv'
 
 LOOP = 10
 LOOP_TWO = 4
+
+# ----------------------------------------------------------------------------------------------
+# Setting & Configuration --- End
+# ----------------------------------------------------------------------------------------------
 
 # Do not remove this function
 # find the valid benchmarks (temporary function)
@@ -113,76 +123,76 @@ def execute_one_mean():
     DEVNULL = open(os.devnull, 'wb')
 
     # ***** execute CUDA *****
-    # bench = 'PolyBench_exe'
-    # for i in poly_exe:
-    #     loop_time, t = 0, 0
-    #     ave_time = 0
-    #     while (loop_time < LOOP):
-    #         # ****** time: start *******
-    #         start_time = time.time()
-    #         print('Loop: %d, Executing of *** %s *** in %s' % (loop_time, i, bench))
-    #         p1 = subprocess.Popen(
-    #             './%s/%s' % (bench, i), close_fds=True,
-    #             shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
-    #
-    #         while 1:
-    #             ret = subprocess.Popen.poll(p1)
-    #             if ret == 0:
-    #                 break
-    #             elif ret is None:
-    #                 pass
-    #
-    #         end_time = time.time()
-    #         exec_time = (end_time - start_time)
-    #         print('execution time of the task is %f' % exec_time)
-    #
-    #         loop_time += 1  # number of loops
-    #         t += exec_time  # total execution of the benchmark (multiple loops)
-    #
-    #         ave_time = float(t / LOOP)
-    #
-    #     print('Job: %s, Exec: %d, total time: %f, average time: %f' % (i, loop_time, t, ave_time))
-    #     f = open(one_task_time_csv, 'a+')
-    #     csv_w = csv.writer(f)
-    #     csv_w.writerow([i, ave_time, t, loop_time])
-    #     time.sleep(2)
-    #     f.close()
+    bench = 'PolyBench_exe'
+    for i in poly_exe:
+        loop_time, t = 0, 0
+        ave_time = 0
+        while (loop_time < LOOP):
+            # ****** time: start *******
+            start_time = time.time()
+            print('Loop: %d, Executing of *** %s *** in %s' % (loop_time, i, bench))
+            p1 = subprocess.Popen(
+                './%s/%s' % (bench, i), close_fds=True,
+                shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+            while 1:
+                ret = subprocess.Popen.poll(p1)
+                if ret == 0:
+                    break
+                elif ret is None:
+                    pass
+
+            end_time = time.time()
+            exec_time = (end_time - start_time)
+            print('execution time of the task is %f' % exec_time)
+
+            loop_time += 1  # number of loops
+            t += exec_time  # total execution of the benchmark (multiple loops)
+
+            ave_time = float(t / LOOP)
+
+        print('Job: %s, Exec: %d, total time: %f, average time: %f' % (i, loop_time, t, ave_time))
+        f = open(one_task_time_csv, 'a+')
+        csv_w = csv.writer(f)
+        csv_w.writerow([i, ave_time, t, loop_time])
+        time.sleep(2)
+        f.close()
 
     # ***** execute CUDA examples *****
-    # bench = 'CUDA_samples/NVIDIA_CUDA-9.0_Samples/bin/x86_64/linux/release'
-    # for i in example_exe:
-    #     loop_time, t = 0, 0
-    #     ave_time = 0
-    #     while (loop_time < LOOP):
-    #         # ****** time: start *******
-    #         start_time = time.time()
-    #         print('Loop: %d, Executing of *** %s *** in %s' % (loop_time, i, bench))
-    #         p1 = subprocess.Popen(
-    #             './%s/%s' % (bench, i), close_fds=True,
-    #             shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
-    #
-    #         while 1:
-    #             ret = subprocess.Popen.poll(p1)
-    #             if ret == 0:
-    #                 break
-    #             elif ret is None:
-    #                 pass
-    #
-    #         end_time = time.time()
-    #         exec_time = (end_time - start_time)
-    #         print('execution time of the task is %f' % exec_time)
-    #
-    #         loop_time += 1  # number of loops
-    #         t += exec_time  # total execution of the benchmark (multiple loops)
-    #
-    #         ave_time = float(t / LOOP)
-    #
-    #     print('Job: %s, Exec: %d, total time: %f, average time: %f' % (i, loop_time, t, ave_time))
-    #     f = open(one_task_time_csv, 'a+')
-    #     csv_w = csv.writer(f)
-    #     csv_w.writerow([i, ave_time, t, loop_time])
-    #     time.sleep(2)
-    #     f.close()
+    bench = 'CUDA_samples/NVIDIA_CUDA-9.0_Samples/bin/x86_64/linux/release'
+    for i in example_exe:
+        loop_time, t = 0, 0
+        ave_time = 0
+        while (loop_time < LOOP):
+            # ****** time: start *******
+            start_time = time.time()
+            print('Loop: %d, Executing of *** %s *** in %s' % (loop_time, i, bench))
+            p1 = subprocess.Popen(
+                './%s/%s' % (bench, i), close_fds=True,
+                shell=True, preexec_fn=os.setsid, stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+            while 1:
+                ret = subprocess.Popen.poll(p1)
+                if ret == 0:
+                    break
+                elif ret is None:
+                    pass
+
+            end_time = time.time()
+            exec_time = (end_time - start_time)
+            print('execution time of the task is %f' % exec_time)
+
+            loop_time += 1  # number of loops
+            t += exec_time  # total execution of the benchmark (multiple loops)
+
+            ave_time = float(t / LOOP)
+
+        print('Job: %s, Exec: %d, total time: %f, average time: %f' % (i, loop_time, t, ave_time))
+        f = open(one_task_time_csv, 'a+')
+        csv_w = csv.writer(f)
+        csv_w.writerow([i, ave_time, t, loop_time])
+        time.sleep(2)
+        f.close()
 
     # ***** execute inference program *****
     bench = 'pytorch-cifar-master'
@@ -399,7 +409,7 @@ def execute_two_mean():
         torch.cuda.empty_cache()
         gc.collect()
 
-#
+# align the execution time or the time gap (one task on 1 GPU - two tasks on 1 GPU) of each task
 def align_execute_mean_two():
     temp = []
     f = open(two_task_time_csv, 'r')
@@ -440,15 +450,15 @@ def align_execute_mean_two():
             dict_two[group[0]] = x1
 
     # write the dictionary to csv file
-    # f = open(align_two_task_time_csv, 'a+')
-    # csv_w = csv.writer(f)
-    #
-    # for p in dict_two.keys():
-    #     list_cor = dict_two[p]
-    #     for i in list_cor:
-    #         # print i
-    #         csv_w.writerow(i)
-    # f.close()
+    f = open(align_two_task_time_csv, 'a+')
+    csv_w = csv.writer(f)
+
+    for p in dict_two.keys():
+        list_cor = dict_two[p]
+        for i in list_cor:
+            # print i
+            csv_w.writerow(i)
+    f.close()
 
     # write the dictionary to csv file
     f = open(align_two_task_time_gap_csv, 'a+')
@@ -463,7 +473,7 @@ def align_execute_mean_two():
         for i in list_cor:
             gap_1 = float(i[3])-float(i[2])
             gap_2 = float(i[5])-float(i[4])
-            # csv_w.writerow([i[0],i[1],gap_1,gap_2])
+            csv_w.writerow([i[0],i[1],gap_1,gap_2])
             x.append(i[0]+'&'+i[1])
             y1.append(gap_1)
             y2.append(gap_2)
@@ -512,7 +522,60 @@ def align_execute_mean_two():
     #     time.sleep(0.3)
     # ----------------------------------------------------------------------------------------------
 
-# test
+
+# ----------------------------------------------------------------------------------------------
+# Mean Utilization --- Start
+# Functionality: Compute the average utilization of each task
+# Input: Folder path which includes all CSV file recording the utilization of each task
+# Output: CSV file that stores the average utilization of each task in its duration
+# ----------------------------------------------------------------------------------------------
+def ave_util(path_util, file_ave_util):
+    all_file_list = os.listdir(path_util)   # get the name of all files
+    pattern = re.compile(r'(all_category)\_(\S+)\_(status)')
+    bench_list = []
+    file_list = []
+    table_util = []
+
+    for i in all_file_list:     # check the file name list one by one
+        name = i
+        match = pattern.match(name)
+        if match == None:
+            continue
+        # print('*** %s *** matched', name)
+        bench_name = match.group(2)
+        bench_list.append(bench_name)       # name list of benchmarks
+        file_list.append(name)              # csv file list of benchmarks
+
+        # Read and compute the average utilization for each task one by one, first check the header of the csv files
+        f = open('%s/%s' % (path_util, name), 'r')
+        csv_r = csv.reader(f)
+        csv_r.next()    # skip the first row (header)
+        cnt = 0
+        sum_util = 0
+        for row in csv_r:
+            cnt += 1
+            sum_util += float(row[-1])
+        f.close()
+        mean_util = sum_util / cnt
+        table_util.append([bench_name, mean_util])
+
+    # Write the average utilization to CSV file
+    f = open(file_ave_util, 'w')
+    csv_w = csv.writer(f)
+
+    for row in table_util:
+        csv_w.writerow(row)
+    f.close()
+
+    return 0
+
+
+# ----------------------------------------------------------------------------------------------
+# Mean Utilization --- End
+# ----------------------------------------------------------------------------------------------
+
+
+
 if __name__ == '__main__':
     # example_exe = list_cuda_example()
 
@@ -523,6 +586,7 @@ if __name__ == '__main__':
 
     # execute_one_mean()
     # execute_two_mean()
-    align_execute_mean_two()
+    # align_execute_mean_two()
 
+    ave_util(path_folder_util, file_ave_util)
 
